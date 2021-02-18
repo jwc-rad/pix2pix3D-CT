@@ -1,1 +1,1 @@
-# Directory for training and inference results
+Directory for training and inference results
