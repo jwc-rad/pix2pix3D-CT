@@ -4,11 +4,15 @@ dicom/YOURDATASET should be in following format:<br>
 <code>
   YOURDATASET
   ├── case1
-  │   └── CT1 containing dicom files
-  │   └── CT2 containing dicom files
+  │   └── CT1
+  │   │   └── dicom files
+  │   └── CT2
+  │       └── dicom files
   ├── case2
-  │   └── CT1 containing dicom files
-  │   └── CT2 containing dicom files
+  │   └── CT1
+  │   │   └── dicom files
+  │   └── CT2
+  │       └── dicom files
   └── ...
 </code>
 </pre>
