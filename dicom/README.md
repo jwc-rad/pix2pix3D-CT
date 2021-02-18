@@ -1,6 +1,6 @@
 # Directory for data sets
 dicom/YOURDATASET should be in following format:<br>
-<pre><code>  YOURDATASET
+<pre><code>YOURDATASET
   ├── case1
   │   ├── CT1
   │   │   └── dicom files
