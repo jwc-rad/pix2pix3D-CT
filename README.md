@@ -5,7 +5,7 @@
   <p>
     <strong>Generating Synthetic Contrast Enhancement from Non-contrast Chest Computed Tomography Using a Generative Adversarial Network</strong>
     <br>
-    Submitted manuscipt
+    <i>Scientific Reports</i> 2021 Oct 14;11(1):20403. <a href="https://doi.org/10.1038/s41598-021-00058-3">doi: 10.1038/s41598-021-00058-3.</a>
   </p>
 </blockquote>
 
