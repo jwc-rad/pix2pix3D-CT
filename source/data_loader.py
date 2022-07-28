@@ -14,6 +14,10 @@ def WND(X, W):
     R[R>255] = 255
     return R
 
+def rWND(X, W):
+    R = X/255.*W[0]+(W[1]-0.5*W[0])
+    return R
+
 # loads from dataframe
 
 class MyDataLoader():
