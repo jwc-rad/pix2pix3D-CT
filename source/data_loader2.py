@@ -22,7 +22,7 @@ def rWND(X, W):
 
 class MyDataLoader():
     def __init__(self, df, cts=('VNC','DE'), img_shape=(512,512,8), grid=(1,1,1),
-                  window1=[(2000,0)], window2=[(2000,0)], rescale_intensity=False, splitvar=0.8 
+                  window1=[(2048,0)], window2=[(2048,0)], rescale_intensity=False, splitvar=0.8 
                 ):
         self.cts = cts
         self.img_shape = img_shape
