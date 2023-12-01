@@ -198,121 +198,155 @@ class My3dPix2Pix():
         else:
             d0 = d00
         
-        d1=Conv3D(filters=32,kernel_size=(3,3,1),strides=(1,1,1),padding='same')(d00)
-        d1=InstanceNormalization()(d1)
-        d1=LeakyReLU(alpha=0.2)(d1)
-        d1=Conv3D(filters=32,kernel_size=(3,3,1),strides=(2,2,2),padding='same')(d1)
-        d1=InstanceNormalization()(d1)
-        d1=LeakyReLU(alpha=0.2)(d1)
+        n_layers = 7
+        encoders = []
+        decoders = []
+        
+        # Downsampling
+        for i in range(n_layers):
+            z = 1
+            if i < self.depth.bit_length()-1: z = 2
+            if i==0:
+                encoders.append(conv3d(d0, self.gf, kernel_size=(4,4,z), strides=(2,2,z), bn=False))
+            else:
+                encoders.append(conv3d(encoders[-1], self.gf*(2**min(i,3)), kernel_size=(4,4,z), strides=(2,2,z)))
+                
+        # Upsampling
+        for i in range(n_layers-1):
+            z = 1
+            if i+self.depth.bit_length()>n_layers: z = 2
+            if i==0:
+                decoders.append(deconv3d(encoders[-(i+1)], encoders[-(i+2)], self.gf*(2**min(n_layers-2-i,3)), 
+                                         kernel_size=(4,4,z), strides=(2,2,z)))
+            else:
+                decoders.append(deconv3d(decoders[-1], encoders[-(i+2)], self.gf*(2**min(n_layers-2-i,3)), 
+                                         kernel_size=(4,4,z), strides=(2,2,z), dropout_rate=self.dropout))
 
-        d2=Conv3D(filters=64,kernel_size=(3,3,3),strides=(2,2,2),padding='same')(d1)
-        d2=InstanceNormalization()(d2)
-        d2=LeakyReLU(alpha=0.2)(d2)
-        d2=Conv3D(filters=64,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(d2)
-        d2=InstanceNormalization()(d2)
-        d2=LeakyReLU(alpha=0.2)(d2)
-
-        d3=Conv3D(filters=128,kernel_size=(3,3,3),strides=(2,2,2),padding='same')(d2)
-        d3=InstanceNormalization()(d3)
-        d3=LeakyReLU(alpha=0.2)(d3)
-        d3=Conv3D(filters=128,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(d3)
-        d3=InstanceNormalization()(d3)
-        d3=LeakyReLU(alpha=0.2)(d3)
-
-        d4=Conv3D(filters=256,kernel_size=(3,3,3),strides=(2,2,2),padding='same')(d3)
-        d4=InstanceNormalization()(d4)
-        d4=LeakyReLU(alpha=0.2)(d4)
-        d4=Conv3D(filters=256,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(d4)
-        d4=InstanceNormalization()(d4)
-        d4=LeakyReLU(alpha=0.2)(d4)
-
-        d5=Conv3D(filters=512,kernel_size=(3,3,3),strides=(2,2,1),padding='same')(d4)
-        d5=InstanceNormalization()(d5)
-        d5=LeakyReLU(alpha=0.2)(d5)
-        d5=Conv3D(filters=512,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(d5)
-        d5=InstanceNormalization()(d5)
-        d5=LeakyReLU(alpha=0.2)(d5)
-
-        d6=Conv3D(filters=512,kernel_size=(3,3,3),strides=(2,2,1),padding='same')(d5)
-        d6=InstanceNormalization()(d6)
-        d6=LeakyReLU(alpha=0.2)(d6)
-        d6=Conv3D(filters=512,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(d6)
-        d6=InstanceNormalization()(d6)
-        d6=LeakyReLU(alpha=0.2)(d6)
-
-        d7=Conv3D(filters=512,kernel_size=(3,3,3),strides=(2,2,1),padding='same')(d6)
-        d7=InstanceNormalization()(d7)
-        d7=LeakyReLU(alpha=0.2)(d7)
-        d7=Conv3D(filters=512,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(d7)
-        d7=InstanceNormalization()(d7)
-        d7=LeakyReLU(alpha=0.2)(d7)
-
-        u1=UpSampling3D(size=(2,2,1))(d7)
-        u1=Concatenate()([u1, d6])
-        u1=Conv3D(filters=512,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(u1)
-        u1=InstanceNormalization()(u1)
-        u1=LeakyReLU(alpha=0.2)(u1)
-        u1=Conv3D(filters=512,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(u1)
-        u1=InstanceNormalization()(u1)
-        u1=LeakyReLU(alpha=0.2)(u1)
-
-        u2=UpSampling3D(size=(2,2,1))(u1)
-        u2=Concatenate()([u2, d5])
-        u2=Conv3D(filters=512,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(u2)
-        u2=InstanceNormalization()(u2)
-        u2=LeakyReLU(alpha=0.2)(u2)
-        u2=Conv3D(filters=512,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(u2)
-        u2=InstanceNormalization()(u2)
-        u2=LeakyReLU(alpha=0.2)(u2)
-
-        u3=UpSampling3D(size=(2,2,1))(u2)
-        u3=Concatenate()([u3, d4])
-        u3=Conv3D(filters=512,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(u3)
-        u3=InstanceNormalization()(u3)
-        u3=LeakyReLU(alpha=0.2)(u3)
-        u3=Conv3D(filters=512,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(u3)
-        u3=InstanceNormalization()(u3)
-        u3=LeakyReLU(alpha=0.2)(u3)
-
-        u4=UpSampling3D(size=(2,2,2))(u3)
-        u4=Concatenate()([u4, d3])
-        u4=Conv3D(filters=512,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(u4)
-        u4=InstanceNormalization()(u4)
-        u4=LeakyReLU(alpha=0.2)(u4)
-        u4=Conv3D(filters=512,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(u4)
-        u4=InstanceNormalization()(u4)
-        u4=LeakyReLU(alpha=0.2)(u4)
-
-        u5=UpSampling3D(size=(2,2,2))(u4)
-        u5=Concatenate()([u5, d2])
-        u5=Conv3D(filters=256,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(u5)
-        u5=InstanceNormalization()(u5)
-        u5=LeakyReLU(alpha=0.2)(u5)
-        u5=Conv3D(filters=256,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(u5)
-        u5=InstanceNormalization()(u5)
-        u5=LeakyReLU(alpha=0.2)(u5)
-
-        u6=UpSampling3D(size=(2,2,2))(u5)
-        u6=Concatenate()([u6, d1])
-        u6=Conv3D(filters=128,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(u6)
-        u6=InstanceNormalization()(u6)
-        u6=LeakyReLU(alpha=0.2)(u6)
-        u6=Conv3D(filters=128,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(u6)
-        u6=InstanceNormalization()(u6)
-        u6=LeakyReLU(alpha=0.2)(u6)
-
-        u7=UpSampling3D(size=(2,2,2))(u6)
-        u7=Concatenate()([u7, d00])
-        u7=Conv3D(filters=64,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(u7)
-        u7=InstanceNormalization()(u7)
-        u7=LeakyReLU(alpha=0.2)(u7)
-        u7=Conv3D(filters=64,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(u7)
-        u7=InstanceNormalization()(u7)
-        u7=LeakyReLU(alpha=0.2)(u7)
-
-        output_img = Conv3D(3, kernel_size=(1,1,1), strides=(1,1,1), padding='same',activation='tanh')(u7)
+        if self.resizeconv:
+            u7 = My3dResize((2,2,2))(decoders[-1])
+        else:
+            u7 = UpSampling3D(size=2)(decoders[-1])
+        init = RandomNormal(stddev=0.02)
+        output_img = Conv3D(self.channels, kernel_size=(4,4,2), strides=1, padding='same', kernel_initializer=init, activation='tanh')(u7)
 
         return Model(d00, output_img)
+
+
+        # d1=Conv3D(filters=32,kernel_size=(3,3,1),strides=(1,1,1),padding='same')(d00)
+        # d1=InstanceNormalization()(d1)
+        # d1=LeakyReLU(alpha=0.2)(d1)
+        # d1=Conv3D(filters=32,kernel_size=(3,3,1),strides=(2,2,2),padding='same')(d1)
+        # d1=InstanceNormalization()(d1)
+        # d1=LeakyReLU(alpha=0.2)(d1)
+
+        # d2=Conv3D(filters=64,kernel_size=(3,3,3),strides=(2,2,2),padding='same')(d1)
+        # d2=InstanceNormalization()(d2)
+        # d2=LeakyReLU(alpha=0.2)(d2)
+        # d2=Conv3D(filters=64,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(d2)
+        # d2=InstanceNormalization()(d2)
+        # d2=LeakyReLU(alpha=0.2)(d2)
+
+        # d3=Conv3D(filters=128,kernel_size=(3,3,3),strides=(2,2,2),padding='same')(d2)
+        # d3=InstanceNormalization()(d3)
+        # d3=LeakyReLU(alpha=0.2)(d3)
+        # d3=Conv3D(filters=128,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(d3)
+        # d3=InstanceNormalization()(d3)
+        # d3=LeakyReLU(alpha=0.2)(d3)
+
+        # d4=Conv3D(filters=256,kernel_size=(3,3,3),strides=(2,2,2),padding='same')(d3)
+        # d4=InstanceNormalization()(d4)
+        # d4=LeakyReLU(alpha=0.2)(d4)
+        # d4=Conv3D(filters=256,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(d4)
+        # d4=InstanceNormalization()(d4)
+        # d4=LeakyReLU(alpha=0.2)(d4)
+
+        # d5=Conv3D(filters=512,kernel_size=(3,3,3),strides=(2,2,1),padding='same')(d4)
+        # d5=InstanceNormalization()(d5)
+        # d5=LeakyReLU(alpha=0.2)(d5)
+        # d5=Conv3D(filters=512,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(d5)
+        # d5=InstanceNormalization()(d5)
+        # d5=LeakyReLU(alpha=0.2)(d5)
+
+        # d6=Conv3D(filters=512,kernel_size=(3,3,3),strides=(2,2,1),padding='same')(d5)
+        # d6=InstanceNormalization()(d6)
+        # d6=LeakyReLU(alpha=0.2)(d6)
+        # d6=Conv3D(filters=512,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(d6)
+        # d6=InstanceNormalization()(d6)
+        # d6=LeakyReLU(alpha=0.2)(d6)
+
+        # d7=Conv3D(filters=512,kernel_size=(3,3,3),strides=(2,2,1),padding='same')(d6)
+        # d7=InstanceNormalization()(d7)
+        # d7=LeakyReLU(alpha=0.2)(d7)
+        # d7=Conv3D(filters=512,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(d7)
+        # d7=InstanceNormalization()(d7)
+        # d7=LeakyReLU(alpha=0.2)(d7)
+
+        # u1=UpSampling3D(size=(2,2,1))(d7)
+        # u1=Concatenate()([u1, d6])
+        # u1=Conv3D(filters=512,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(u1)
+        # u1=InstanceNormalization()(u1)
+        # u1=LeakyReLU(alpha=0.2)(u1)
+        # u1=Conv3D(filters=512,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(u1)
+        # u1=InstanceNormalization()(u1)
+        # u1=LeakyReLU(alpha=0.2)(u1)
+
+        # u2=UpSampling3D(size=(2,2,1))(u1)
+        # u2=Concatenate()([u2, d5])
+        # u2=Conv3D(filters=512,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(u2)
+        # u2=InstanceNormalization()(u2)
+        # u2=LeakyReLU(alpha=0.2)(u2)
+        # u2=Conv3D(filters=512,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(u2)
+        # u2=InstanceNormalization()(u2)
+        # u2=LeakyReLU(alpha=0.2)(u2)
+
+        # u3=UpSampling3D(size=(2,2,1))(u2)
+        # u3=Concatenate()([u3, d4])
+        # u3=Conv3D(filters=512,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(u3)
+        # u3=InstanceNormalization()(u3)
+        # u3=LeakyReLU(alpha=0.2)(u3)
+        # u3=Conv3D(filters=512,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(u3)
+        # u3=InstanceNormalization()(u3)
+        # u3=LeakyReLU(alpha=0.2)(u3)
+
+        # u4=UpSampling3D(size=(2,2,2))(u3)
+        # u4=Concatenate()([u4, d3])
+        # u4=Conv3D(filters=512,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(u4)
+        # u4=InstanceNormalization()(u4)
+        # u4=LeakyReLU(alpha=0.2)(u4)
+        # u4=Conv3D(filters=512,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(u4)
+        # u4=InstanceNormalization()(u4)
+        # u4=LeakyReLU(alpha=0.2)(u4)
+
+        # u5=UpSampling3D(size=(2,2,2))(u4)
+        # u5=Concatenate()([u5, d2])
+        # u5=Conv3D(filters=256,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(u5)
+        # u5=InstanceNormalization()(u5)
+        # u5=LeakyReLU(alpha=0.2)(u5)
+        # u5=Conv3D(filters=256,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(u5)
+        # u5=InstanceNormalization()(u5)
+        # u5=LeakyReLU(alpha=0.2)(u5)
+
+        # u6=UpSampling3D(size=(2,2,2))(u5)
+        # u6=Concatenate()([u6, d1])
+        # u6=Conv3D(filters=128,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(u6)
+        # u6=InstanceNormalization()(u6)
+        # u6=LeakyReLU(alpha=0.2)(u6)
+        # u6=Conv3D(filters=128,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(u6)
+        # u6=InstanceNormalization()(u6)
+        # u6=LeakyReLU(alpha=0.2)(u6)
+
+        # u7=UpSampling3D(size=(2,2,2))(u6)
+        # u7=Concatenate()([u7, d00])
+        # u7=Conv3D(filters=64,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(u7)
+        # u7=InstanceNormalization()(u7)
+        # u7=LeakyReLU(alpha=0.2)(u7)
+        # u7=Conv3D(filters=64,kernel_size=(3,3,3),strides=(1,1,1),padding='same')(u7)
+        # u7=InstanceNormalization()(u7)
+        # u7=LeakyReLU(alpha=0.2)(u7)
+
+        # output_img = Conv3D(3, kernel_size=(1,1,1), strides=(1,1,1), padding='same',activation='tanh')(u7)
+
+        # return Model(d00, output_img)
 
     def build_discriminator(self):
         def d_layer(layer_input, filters, kernel_size=(4,4,2), strides=(2,2,2), bn=True, dropout=False):
